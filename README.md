@@ -65,6 +65,19 @@ python caretrack.py complete 1
 python caretrack.py remove 1
 ```
 
+**Obter Recomendação Climática:**
+Consulta a API Open-Meteo para retornar uma recomendação de hidratação baseada no clima atual.
+```bash
+python caretrack.py advice
+```
+
+## 🌐 Deploy (Distribuição)
+
+Como se trata de uma aplicação CLI (Linha de Comando), a nossa "publicação" é realizada diretamente através de repositórios Git, permitindo que qualquer desenvolvedor possa clonar e rodar em seu próprio terminal.
+Alternativamente, esta aplicação pode ser empacotada via Docker ou distribuída como pacote no PyPI.
+
+Repositório Público do Projeto: [https://github.com/SEU_USUARIO/SEU_REPOSITORIO](https://github.com/SEU_USUARIO/SEU_REPOSITORIO)
+
 ## 🧪 Rodando os Testes
 
 Para garantir que tudo funciona corretamente, utilize o `pytest`:
