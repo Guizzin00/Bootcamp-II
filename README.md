@@ -2,7 +2,7 @@
 
 CareTrack é uma aplicação de Linha de Comando (CLI) simples e eficiente para gerenciar metas diárias de autocuidado e hidratação.
 
-[![CI/CD Pipeline](https://github.com/SEU_USUARIO/SEU_REPOSITORIO/actions/workflows/ci.yml/badge.svg)](https://github.com/SEU_USUARIO/SEU_REPOSITORIO/actions/workflows/ci.yml)
+[![CI/CD Pipeline](https://github.com/Guizzin00/Bootcamp-II/actions/workflows/ci.yml/badge.svg)](https://github.com/Guizzin00/Bootcamp-II/actions/workflows/ci.yml)
 
 ## 📌 Problema Real
 
@@ -32,8 +32,8 @@ Estudantes, desenvolvedores e profissionais com rotinas aceleradas que precisam 
 
 1. Clone este repositório:
    ```bash
-   git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
-   cd SEU_REPOSITORIO
+   git clone https://github.com/Guizzin00/Bootcamp-II.git
+   cd Bootcamp-II
    ```
 
 2. Instale as dependências:
@@ -76,7 +76,7 @@ python caretrack.py advice
 Como se trata de uma aplicação CLI (Linha de Comando), a nossa "publicação" é realizada diretamente através de repositórios Git, permitindo que qualquer desenvolvedor possa clonar e rodar em seu próprio terminal.
 Alternativamente, esta aplicação pode ser empacotada via Docker ou distribuída como pacote no PyPI.
 
-Repositório Público do Projeto: [https://github.com/SEU_USUARIO/SEU_REPOSITORIO](https://github.com/SEU_USUARIO/SEU_REPOSITORIO)
+Repositório Público do Projeto: [https://github.com/Guizzin00/Bootcamp-II](https://github.com/Guizzin00/Bootcamp-II)
 
 ## 🧪 Rodando os Testes
 
