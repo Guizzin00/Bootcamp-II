@@ -84,4 +84,4 @@ Consulte o arquivo `VERSION` para a versão atual.
 Versão Semântica: **1.0.0**
 
 ## 👨‍💻 Autor
-[Amanda Pacheco]
+[Guilherme Oliveira]
