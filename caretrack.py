@@ -3,7 +3,11 @@ import os
 import argparse
 import requests
 
-DB_FILE = "caretrack_db.json"
+# Use /tmp directory if running on Vercel (read-only filesystem workaround)
+if os.environ.get("VERCEL"):
+    DB_FILE = "/tmp/caretrack_db.json"
+else:
+    DB_FILE = "caretrack_db.json"
 
 def load_tasks():
     if not os.path.exists(DB_FILE):
