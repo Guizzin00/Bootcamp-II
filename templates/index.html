@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareTrack - Autocuidado e Hidratação</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="background-particles"></div>
+    
+    <header class="main-header glass-panel">
+        <div class="logo">
+            <i class="fa-solid fa-droplet icon-gradient"></i>
+            <div class="logo-text">
+                <h1>CareTrack</h1>
+                <p class="subtitle">Seu assistente diário</p>
+            </div>
+        </div>
+        
+        <div class="weather-widget" id="weather-widget">
+            <div class="loader" id="advice-loader"></div>
+            <div class="weather-content" id="advice-content" style="display: none;">
+                <div class="weather-info">
+                    <i class="fa-solid fa-cloud-sun weather-icon"></i>
+                    <div>
+                        <div class="weather-date" id="weather-date">Hoje</div>
+                        <div class="weather-temp" id="weather-temp">--°C</div>
+                    </div>
+                </div>
+                <div class="weather-advice">
+                    <p id="advice-message">Carregando dicas...</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="task-input-section">
+            <form id="task-form" class="keep-form glass-panel">
+                <input type="text" id="task-title" placeholder="Criar uma nota..." required autocomplete="off">
+                <button type="submit" class="btn-icon-submit" title="Adicionar">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+            </form>
+        </section>
+
+        <section class="notes-section">
+            <div class="notes-grid" id="task-list">
+                <!-- As tarefas serão inseridas aqui via JS -->
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
