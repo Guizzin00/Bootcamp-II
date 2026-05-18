@@ -110,24 +110,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tasks.forEach((task, index) => {
             const div = document.createElement('div');
-            // Assign a random pastel color based on task ID
-            const colorClass = 'note-color-' + ((task.id % 5) + 1);
-            div.className = `task-item ${colorClass} ${task.completed ? 'completed' : ''}`;
+            div.className = `task-item ${task.completed ? 'completed' : ''}`;
             div.id = `task-${task.id}`;
             
+            // Gerar timestamp visual (já que o backend ainda não salva data)
+            const now = new Date();
+            const dateOptions = { day: 'numeric', month: 'short' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit' };
+            const dateStr = now.toLocaleDateString('pt-BR', dateOptions);
+            const timeStr = now.toLocaleTimeString('pt-BR', timeOptions);
+            
             div.innerHTML = `
-                <div class="task-info">
-                    <input type="checkbox" 
-                           class="task-checkbox" 
-                           id="cb-${task.id}" 
-                           ${task.completed ? 'checked' : ''} 
-                           onclick="toggleTask(${task.id})">
-                    <span class="task-title">${escapeHTML(task.title)}</span>
+                <div class="task-header">
+                    <div class="task-doc-icon">
+                        <i class="fa-regular fa-file-lines"></i>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-icon" onclick="toggleTask(${task.id})" title="${task.completed ? 'Desfazer' : 'Concluir'}">
+                            <i class="fa-solid ${task.completed ? 'fa-rotate-left' : 'fa-check'}"></i>
+                        </button>
+                        <button class="btn-icon" onclick="removeTask(${task.id})" title="Remover">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="task-actions">
-                    <button class="btn-icon" onclick="removeTask(${task.id})" title="Remover">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                <div class="task-title">${escapeHTML(task.title)}</div>
+                <div class="task-footer">
+                    <span class="task-date">${dateStr}., ${timeStr}</span>
                 </div>
             `;
             taskList.appendChild(div);
