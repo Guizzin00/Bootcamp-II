@@ -52,14 +52,15 @@ def get_weather():
     import urllib.request
     import json
     
-    url = "https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo"
+    url = "https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo"
     try:
         with urllib.request.urlopen(url, timeout=5) as response:
             data = json.loads(response.read().decode('utf-8'))
             return jsonify({
                 "status": "success",
                 "current": {
-                    "temperature": data.get("current", {}).get("temperature_2m")
+                    "temperature": data.get("current", {}).get("temperature_2m"),
+                    "humidity": data.get("current", {}).get("relative_humidity_2m")
                 },
                 "daily": {
                     "time": data.get("daily", {}).get("time", [])[:5],

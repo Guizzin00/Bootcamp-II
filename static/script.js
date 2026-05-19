@@ -6,10 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Weather Widget elements
     const adviceLoader = document.getElementById('advice-loader');
     const adviceContent = document.getElementById('advice-content');
-    const adviceMessage = document.getElementById('advice-message');
     const weatherIcon = document.querySelector('.weather-icon');
     const weatherDate = document.getElementById('weather-date');
     const weatherTemp = document.getElementById('weather-temp');
+    const weatherHumidity = document.getElementById('weather-humidity');
+    const weatherCondition = document.getElementById('weather-condition');
+    const healthTipsPanel = document.getElementById('health-tips-panel');
+    const tipsGrid = document.getElementById('tips-grid');
 
     // Load initial data
     loadTasks();
@@ -51,25 +54,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.toggleTask = async function(id) {
+    window.toggleTask = async function(id, event) {
+        // Prevent the label from triggering a second click on the checkbox
+        if (event) event.preventDefault();
+        
         const item = document.getElementById(`task-${id}`);
         const checkbox = document.getElementById(`cb-${id}`);
         
-        if (!checkbox.checked) {
-            try {
-                const response = await fetch(`/api/tasks/${id}/complete`, { method: 'POST' });
-                if (response.ok) {
-                    item.classList.add('completed');
-                    checkbox.checked = true;
-                } else {
-                    checkbox.checked = false;
-                }
-            } catch (error) {
-                console.error('Erro ao completar tarefa:', error);
-                checkbox.checked = false;
-            }
+        // Optimistically toggle checkbox visual
+        const newState = !checkbox.checked;
+        checkbox.checked = newState;
+        
+        if (newState) {
+            item.classList.add('completed');
         } else {
-            checkbox.checked = true;
+            item.classList.remove('completed');
+        }
+        
+        // Update label text
+        const label = item.querySelector('.task-check-label');
+        if (label) label.textContent = newState ? 'Concluída' : 'Pendente';
+        
+        try {
+            const response = await fetch(`/api/tasks/${id}/complete`, { method: 'POST' });
+            if (!response.ok) {
+                // Revert on error
+                checkbox.checked = !newState;
+                item.classList.toggle('completed');
+                if (label) label.textContent = !newState ? 'Concluída' : 'Pendente';
+            }
+        } catch (error) {
+            console.error('Erro ao alternar tarefa:', error);
+            checkbox.checked = !newState;
+            item.classList.toggle('completed');
+            if (label) label.textContent = !newState ? 'Concluída' : 'Pendente';
         }
     };
 
@@ -94,10 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTasks(tasks) {
         taskList.innerHTML = '';
         
+        // Sort: uncompleted first, then completed
         tasks.sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1);
-        
-        const taskCountEl = document.getElementById('task-count');
-        if (taskCountEl) taskCountEl.textContent = tasks.length;
 
         if (tasks.length === 0) {
             taskList.innerHTML = `
@@ -108,12 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        tasks.forEach((task, index) => {
+        tasks.forEach((task) => {
             const div = document.createElement('div');
             div.className = `task-item ${task.completed ? 'completed' : ''}`;
             div.id = `task-${task.id}`;
             
-            // Gerar timestamp visual (já que o backend ainda não salva data)
+            // Timestamp
             const now = new Date();
             const dateOptions = { day: 'numeric', month: 'short' };
             const timeOptions = { hour: '2-digit', minute: '2-digit' };
@@ -122,14 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             div.innerHTML = `
                 <div class="task-header">
-                    <div class="task-doc-icon">
-                        <i class="fa-regular fa-file-lines"></i>
-                    </div>
+                    <label class="task-check-area" onclick="toggleTask(${task.id}, event)">
+                        <div class="custom-checkbox">
+                            <input type="checkbox" id="cb-${task.id}" ${task.completed ? 'checked' : ''} tabindex="-1">
+                            <span class="checkmark"></span>
+                        </div>
+                        <span class="task-check-label">${task.completed ? 'Concluída' : 'Pendente'}</span>
+                    </label>
                     <div class="task-actions">
-                        <button class="btn-icon" onclick="toggleTask(${task.id})" title="${task.completed ? 'Desfazer' : 'Concluir'}">
-                            <i class="fa-solid ${task.completed ? 'fa-rotate-left' : 'fa-check'}"></i>
-                        </button>
-                        <button class="btn-icon" onclick="removeTask(${task.id})" title="Remover">
+                        <button class="btn-icon btn-delete" onclick="removeTask(${task.id})" title="Remover">
                             <i class="fa-regular fa-trash-can"></i>
                         </button>
                     </div>
@@ -147,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Display today's date
             const today = new Date();
-            const options = { weekday: 'short', day: 'numeric', month: 'short' };
+            const options = { weekday: 'long', day: 'numeric', month: 'short' };
             weatherDate.textContent = today.toLocaleDateString('pt-BR', options);
 
             // Fetch weather and advice concurrently
@@ -156,14 +173,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch('/api/advice').catch(() => null)
             ]);
 
-            let tempText = '--°C';
+            let temperature = null;
+            let humidity = null;
+
             if (weatherRes && weatherRes.ok) {
                 const wData = await weatherRes.json();
-                if (wData.status === 'success' && wData.current.temperature !== undefined) {
-                    tempText = Math.round(wData.current.temperature) + '°C';
+                if (wData.status === 'success') {
+                    temperature = wData.current.temperature;
+                    humidity = wData.current.humidity;
+                    
+                    if (temperature !== undefined && temperature !== null) {
+                        weatherTemp.textContent = Math.round(temperature) + '°C';
+                    }
+                    if (humidity !== undefined && humidity !== null) {
+                        weatherHumidity.textContent = Math.round(humidity) + '%';
+                    }
                 }
             }
-            weatherTemp.textContent = tempText;
 
             let adviceStatus = 'normal';
             if (adviceRes && adviceRes.ok) {
@@ -174,34 +200,116 @@ document.addEventListener('DOMContentLoaded', () => {
             adviceLoader.style.display = 'none';
             adviceContent.style.display = 'flex';
             
-            switch(adviceStatus) {
-                case 'hot':
-                    adviceMessage.textContent = 'O clima está quente! Dobre sua ingestão de água hoje.';
-                    weatherIcon.className = 'fa-solid fa-temperature-arrow-up weather-icon';
-                    weatherIcon.style.color = 'var(--danger-color)';
-                    break;
-                case 'cold':
-                    adviceMessage.textContent = 'O clima está frio. Hidrate-se mesmo sem sede e cuide da pele!';
-                    weatherIcon.className = 'fa-solid fa-temperature-arrow-down weather-icon';
-                    weatherIcon.style.color = '#38bdf8';
-                    break;
-                case 'normal':
-                    adviceMessage.textContent = 'Clima agradável. Mantenha sua rotina normal de saúde e hidratação.';
-                    weatherIcon.className = 'fa-solid fa-cloud-sun weather-icon';
-                    weatherIcon.style.color = 'var(--success-color)';
-                    break;
-                default:
-                    adviceMessage.textContent = 'Aproveite o seu dia e lembre-se de cuidar de si mesmo!';
-                    weatherIcon.className = 'fa-solid fa-sun weather-icon';
-                    weatherIcon.style.color = 'var(--note-1)';
-            }
+            // Set weather condition and icon
+            setWeatherUI(adviceStatus, temperature, humidity);
+            
+            // Generate and display health tips
+            generateHealthTips(adviceStatus, temperature, humidity);
             
         } catch (error) {
             console.error('Erro ao carregar clima/dicas:', error);
             adviceLoader.style.display = 'none';
             adviceContent.style.display = 'flex';
-            adviceMessage.textContent = 'Erro ao conectar com serviços.';
+            weatherCondition.textContent = 'Indisponível';
         }
+    }
+
+    function setWeatherUI(status, temp, humidity) {
+        let conditionText = '';
+        let iconClass = '';
+        let iconColor = '';
+
+        switch(status) {
+            case 'hot':
+                conditionText = 'Quente';
+                iconClass = 'fa-solid fa-temperature-arrow-up';
+                iconColor = var_danger();
+                if (humidity !== null && humidity < 40) conditionText = 'Quente e Seco';
+                else if (humidity !== null && humidity > 70) conditionText = 'Quente e Úmido';
+                break;
+            case 'cold':
+                conditionText = 'Frio';
+                iconClass = 'fa-solid fa-temperature-arrow-down';
+                iconColor = '#38bdf8';
+                if (humidity !== null && humidity < 40) conditionText = 'Frio e Seco';
+                else if (humidity !== null && humidity > 70) conditionText = 'Frio e Úmido';
+                break;
+            case 'normal':
+            default:
+                conditionText = 'Agradável';
+                iconClass = 'fa-solid fa-cloud-sun';
+                iconColor = var_success();
+                if (humidity !== null && humidity < 30) conditionText = 'Ameno mas Seco';
+                else if (humidity !== null && humidity > 80) conditionText = 'Ameno e Úmido';
+                break;
+        }
+
+        weatherCondition.textContent = conditionText;
+        weatherIcon.className = iconClass + ' weather-icon';
+        weatherIcon.style.color = iconColor;
+    }
+
+    function var_danger() { return getComputedStyle(document.documentElement).getPropertyValue('--danger-color').trim() || '#ef4444'; }
+    function var_success() { return getComputedStyle(document.documentElement).getPropertyValue('--success-color').trim() || '#22c55e'; }
+
+    function generateHealthTips(status, temp, humidity) {
+        const tips = [];
+
+        // Temperature-based tips
+        if (status === 'hot') {
+            tips.push({ emoji: '💧', text: 'Beba pelo menos 3 litros de água ao longo do dia. Aumente em dias de atividade física.' });
+            tips.push({ emoji: '🧴', text: 'Use protetor solar e evite exposição ao sol entre 10h e 16h.' });
+            tips.push({ emoji: '🍉', text: 'Consuma frutas ricas em água: melancia, melão, abacaxi e pepino.' });
+            tips.push({ emoji: '👕', text: 'Use roupas leves e de cores claras para ajudar na regulação térmica.' });
+        } else if (status === 'cold') {
+            tips.push({ emoji: '☕', text: 'Hidrate-se mesmo sem sede! Chás e sopas quentes ajudam a manter o corpo aquecido.' });
+            tips.push({ emoji: '🧣', text: 'Mantenha-se agasalhado e proteja extremidades como mãos, pés e orelhas.' });
+            tips.push({ emoji: '🏃', text: 'Faça exercícios leves em ambientes cobertos para manter a circulação ativa.' });
+            tips.push({ emoji: '🍊', text: 'Reforce a vitamina C com laranjas, limões e acerolas para fortalecer a imunidade.' });
+        } else {
+            tips.push({ emoji: '💧', text: 'Mantenha sua rotina de 2 litros de água por dia. Distribua ao longo das refeições.' });
+            tips.push({ emoji: '🚶', text: 'Aproveite o clima ameno para uma caminhada ao ar livre de pelo menos 30 minutos.' });
+            tips.push({ emoji: '🥗', text: 'Inclua vegetais frescos e saladas nas refeições para manter o corpo nutrido.' });
+            tips.push({ emoji: '😴', text: 'Clima agradável favorece o sono. Tente dormir entre 7 e 8 horas esta noite.' });
+        }
+
+        // Humidity-based tips
+        if (humidity !== null) {
+            if (humidity < 30) {
+                tips.push({ emoji: '🏜️', text: `Umidade muito baixa (${Math.round(humidity)}%). Use soro fisiológico nas narinas e um umidificador.` });
+                tips.push({ emoji: '👁️', text: 'Ar seco pode irritar os olhos. Use colírio lubrificante se necessário.' });
+            } else if (humidity < 40) {
+                tips.push({ emoji: '💨', text: `Umidade em ${Math.round(humidity)}%. Mantenha uma toalha úmida no ambiente para aliviar o ar seco.` });
+            } else if (humidity > 80) {
+                tips.push({ emoji: '🌧️', text: `Umidade alta (${Math.round(humidity)}%). Atenção a mofo em ambientes fechados — ventile a casa.` });
+            }
+        }
+
+        // Time-of-day tips
+        const hour = new Date().getHours();
+        if (hour < 10) {
+            tips.push({ emoji: '🌅', text: 'Bom dia! Comece o dia com um copo de água morna. Ajuda a ativar o metabolismo.' });
+        } else if (hour < 14) {
+            tips.push({ emoji: '☀️', text: 'Hora do almoço se aproxima. Prefira refeições leves e não esqueça de se hidratar.' });
+        } else if (hour < 18) {
+            tips.push({ emoji: '🍵', text: 'Reta final do dia! Um chá ou suco natural pode dar aquele boost de energia.' });
+        } else {
+            tips.push({ emoji: '🌙', text: 'Noite chegando. Evite telas 1h antes de dormir e hidrate a pele antes de deitar.' });
+        }
+
+        // Render tips
+        tipsGrid.innerHTML = '';
+        tips.forEach(tip => {
+            const card = document.createElement('div');
+            card.className = 'tip-card';
+            card.innerHTML = `
+                <span class="tip-emoji">${tip.emoji}</span>
+                <span class="tip-text">${tip.text}</span>
+            `;
+            tipsGrid.appendChild(card);
+        });
+
+        healthTipsPanel.style.display = 'block';
     }
 
     function escapeHTML(str) {

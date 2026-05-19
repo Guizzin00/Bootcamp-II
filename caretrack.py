@@ -49,9 +49,10 @@ def complete_task(task_id):
     tasks = load_tasks()
     for t in tasks:
         if t['id'] == task_id:
-            t['completed'] = True
+            t['completed'] = not t['completed']
             save_tasks(tasks)
-            print(f"Tarefa {task_id} marcada como concluída!")
+            state = "concluída" if t['completed'] else "reaberta"
+            print(f"Tarefa {task_id} marcada como {state}!")
             return True
     print(f"Erro: Tarefa {task_id} não encontrada.")
     return False

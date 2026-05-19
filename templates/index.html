@@ -23,19 +23,37 @@
         <div class="weather-widget" id="weather-widget">
             <div class="loader" id="advice-loader"></div>
             <div class="weather-content" id="advice-content" style="display: none;">
-                <div class="weather-info">
+                <div class="weather-main-info">
                     <i class="fa-solid fa-cloud-sun weather-icon"></i>
-                    <div>
-                        <div class="weather-date" id="weather-date">Hoje</div>
+                    <div class="weather-temps">
                         <div class="weather-temp" id="weather-temp">--°C</div>
+                        <div class="weather-condition" id="weather-condition">Carregando...</div>
                     </div>
                 </div>
-                <div class="weather-advice">
-                    <p id="advice-message">Carregando dicas...</p>
+                <div class="weather-details">
+                    <div class="weather-detail-item">
+                        <i class="fa-solid fa-droplet"></i>
+                        <span id="weather-humidity">--%</span>
+                    </div>
+                    <div class="weather-detail-item">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span id="weather-date">Hoje</span>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
+
+    <!-- Painel de Dicas de Saúde -->
+    <section class="health-tips-panel glass-panel" id="health-tips-panel" style="display: none;">
+        <div class="tips-header">
+            <i class="fa-solid fa-heart-pulse tips-icon"></i>
+            <h2>Dicas para o seu dia</h2>
+        </div>
+        <div class="tips-grid" id="tips-grid">
+            <!-- Dicas serão inseridas via JS -->
+        </div>
+    </section>
 
     <main class="container">
         <section class="task-input-section">
