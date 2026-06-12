@@ -1,37 +1,46 @@
-import json
 import os
 import argparse
 import requests
+from dotenv import load_dotenv
+from supabase import create_client, Client
 
-# Use /tmp directory if running on Vercel (read-only filesystem workaround)
-if os.environ.get("VERCEL"):
-    DB_FILE = "/tmp/caretrack_db.json"
-else:
-    DB_FILE = "caretrack_db.json"
+load_dotenv()
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+def get_supabase_client():
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def load_tasks():
-    if not os.path.exists(DB_FILE):
+    client = get_supabase_client()
+    if not client:
         return []
-    with open(DB_FILE, "r") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
-
-def save_tasks(tasks):
-    with open(DB_FILE, "w") as f:
-        json.dump(tasks, f, indent=4)
+    try:
+        response = client.table("tasks").select("*").order("id").execute()
+        return response.data
+    except Exception as e:
+        print(f"Erro ao carregar tarefas: {e}")
+        return []
 
 def add_task(title):
     if not title.strip():
         print("Erro: A tarefa não pode ser vazia.")
         return False
-    tasks = load_tasks()
-    new_id = 1 if not tasks else max(t['id'] for t in tasks) + 1
-    tasks.append({"id": new_id, "title": title.strip(), "completed": False})
-    save_tasks(tasks)
-    print(f"Tarefa adicionada: {title.strip()}")
-    return True
+    client = get_supabase_client()
+    if not client:
+        print("Erro: Banco de dados não configurado. Defina SUPABASE_URL e SUPABASE_KEY.")
+        return False
+    
+    try:
+        client.table("tasks").insert({"title": title.strip(), "completed": False}).execute()
+        print(f"Tarefa adicionada: {title.strip()}")
+        return True
+    except Exception as e:
+        print(f"Erro ao adicionar tarefa: {e}")
+        return False
 
 def list_tasks():
     tasks = load_tasks()
@@ -40,32 +49,52 @@ def list_tasks():
         return []
     print("\n--- Sua Checklist de Autocuidado ---")
     for t in tasks:
-        status = "[x]" if t['completed'] else "[ ]"
-        print(f"{t['id']} - {status} {t['title']}")
+        status = "[x]" if t.get('completed') else "[ ]"
+        print(f"{t.get('id')} - {status} {t.get('title')}")
     print("------------------------------------\n")
     return tasks
 
 def complete_task(task_id):
-    tasks = load_tasks()
-    for t in tasks:
-        if t['id'] == task_id:
-            t['completed'] = not t['completed']
-            save_tasks(tasks)
-            state = "concluída" if t['completed'] else "reaberta"
-            print(f"Tarefa {task_id} marcada como {state}!")
-            return True
-    print(f"Erro: Tarefa {task_id} não encontrada.")
-    return False
+    client = get_supabase_client()
+    if not client:
+        print("Erro: Banco de dados não configurado.")
+        return False
+    
+    try:
+        response = client.table("tasks").select("completed").eq("id", task_id).execute()
+        if not response.data:
+            print(f"Erro: Tarefa {task_id} não encontrada.")
+            return False
+        
+        current_status = response.data[0].get("completed", False)
+        new_status = not current_status
+        
+        client.table("tasks").update({"completed": new_status}).eq("id", task_id).execute()
+        state = "concluída" if new_status else "reaberta"
+        print(f"Tarefa {task_id} marcada como {state}!")
+        return True
+    except Exception as e:
+        print(f"Erro ao concluir tarefa: {e}")
+        return False
 
 def remove_task(task_id):
-    tasks = load_tasks()
-    new_tasks = [t for t in tasks if t['id'] != task_id]
-    if len(tasks) == len(new_tasks):
-        print(f"Erro: Tarefa {task_id} não encontrada.")
+    client = get_supabase_client()
+    if not client:
+        print("Erro: Banco de dados não configurado.")
         return False
-    save_tasks(new_tasks)
-    print(f"Tarefa {task_id} removida com sucesso!")
-    return True
+        
+    try:
+        response = client.table("tasks").select("id").eq("id", task_id).execute()
+        if not response.data:
+            print(f"Erro: Tarefa {task_id} não encontrada.")
+            return False
+            
+        client.table("tasks").delete().eq("id", task_id).execute()
+        print(f"Tarefa {task_id} removida com sucesso!")
+        return True
+    except Exception as e:
+        print(f"Erro ao remover tarefa: {e}")
+        return False
 
 def get_weather_advice():
     # São Paulo coordinates
