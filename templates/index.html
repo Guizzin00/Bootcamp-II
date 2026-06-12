@@ -7,13 +7,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='electrocardiogram.svg') }}">
 </head>
 <body>
     <div class="background-particles"></div>
     
     <header class="main-header glass-panel">
         <div class="logo">
-            <i class="fa-solid fa-droplet icon-gradient"></i>
+            <img src="{{ url_for('static', filename='electrocardiogram.svg') }}" alt="Logo CareTrack" class="custom-logo">
             <div class="logo-text">
                 <h1>CareTrack</h1>
                 <p class="subtitle">Sua jornada de bem-estar, organizada com elegância</p>
@@ -66,9 +67,29 @@
             </form>
         </section>
 
-        <section class="notes-section">
-            <div class="notes-grid" id="task-list">
-                <!-- As tarefas serão inseridas aqui via JS -->
+        <section class="task-progress-section glass-panel">
+            <div class="progress-info">
+                <span id="progress-text">Progresso do dia: 0%</span>
+                <span id="progress-count">0 de 0 concluídas</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progress-bar"></div>
+            </div>
+        </section>
+
+        <section class="task-board">
+            <div class="task-column">
+                <h3 class="column-title"><i class="fa-regular fa-clock"></i> Pendentes (<span id="count-pending">0</span>)</h3>
+                <div class="task-list-vertical" id="list-pending" ondragover="allowDrop(event)" ondrop="drop(event, false)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    <!-- Tarefas pendentes inseridas via JS -->
+                </div>
+            </div>
+            
+            <div class="task-column">
+                <h3 class="column-title completed-title"><i class="fa-regular fa-circle-check"></i> Concluídas (<span id="count-completed">0</span>)</h3>
+                <div class="task-list-vertical" id="list-completed" ondragover="allowDrop(event)" ondrop="drop(event, true)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    <!-- Tarefas concluídas inseridas via JS -->
+                </div>
             </div>
         </section>
     </main>

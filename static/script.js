@@ -1,7 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     const taskForm = document.getElementById('task-form');
     const taskTitleInput = document.getElementById('task-title');
-    const taskList = document.getElementById('task-list');
+    const listPending = document.getElementById('list-pending');
+    const listCompleted = document.getElementById('list-completed');
+    const countPending = document.getElementById('count-pending');
+    const countCompleted = document.getElementById('count-completed');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const progressCount = document.getElementById('progress-count');
     
     // Weather Widget elements
     const adviceLoader = document.getElementById('advice-loader');
@@ -110,54 +116,210 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function renderTasks(tasks) {
-        taskList.innerHTML = '';
+        listPending.innerHTML = '';
+        listCompleted.innerHTML = '';
         
-        // Sort: uncompleted first, then completed
-        tasks.sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1);
+        let pending = [];
+        let completed = [];
 
-        if (tasks.length === 0) {
-            taskList.innerHTML = `
+        tasks.forEach(task => {
+            if (task.completed) {
+                completed.push(task);
+            } else {
+                pending.push(task);
+            }
+        });
+
+        // Update Progress
+        const total = tasks.length;
+        const comp = completed.length;
+        const percent = total === 0 ? 0 : Math.round((comp / total) * 100);
+        
+        progressBar.style.width = `${percent}%`;
+        progressText.textContent = `Progresso do dia: ${percent}%`;
+        progressCount.textContent = `${comp} de ${total} concluídas`;
+        
+        countPending.textContent = pending.length;
+        countCompleted.textContent = comp;
+
+        if (pending.length === 0) {
+            listPending.innerHTML = `
                 <div class="empty-state">
-                    Nenhuma nota pendente. Tudo limpo! ✨
+                    <i class="fa-solid fa-mug-hot"></i>
+                    <p>Nenhuma tarefa pendente.</p>
                 </div>
             `;
-            return;
+        } else {
+            pending.forEach(task => listPending.appendChild(createTaskElement(task)));
         }
 
-        tasks.forEach((task) => {
-            const div = document.createElement('div');
-            div.className = `task-item ${task.completed ? 'completed' : ''}`;
-            div.id = `task-${task.id}`;
-            
-            // Timestamp
-            const now = new Date();
-            const dateOptions = { day: 'numeric', month: 'short' };
-            const timeOptions = { hour: '2-digit', minute: '2-digit' };
-            const dateStr = now.toLocaleDateString('pt-BR', dateOptions);
-            const timeStr = now.toLocaleTimeString('pt-BR', timeOptions);
-            
-            div.innerHTML = `
-                <div class="task-header">
-                    <label class="task-check-area" onclick="toggleTask(${task.id}, event)">
-                        <div class="custom-checkbox">
-                            <input type="checkbox" id="cb-${task.id}" ${task.completed ? 'checked' : ''} tabindex="-1">
-                            <span class="checkmark"></span>
-                        </div>
-                        <span class="task-check-label">${task.completed ? 'Concluída' : 'Pendente'}</span>
-                    </label>
-                    <div class="task-actions">
-                        <button class="btn-icon btn-delete" onclick="removeTask(${task.id})" title="Remover">
-                            <i class="fa-regular fa-trash-can"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="task-title">${escapeHTML(task.title)}</div>
-                <div class="task-footer">
-                    <span class="task-date">${dateStr}., ${timeStr}</span>
+        if (completed.length === 0) {
+            listCompleted.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-wind"></i>
+                    <p>Nenhuma tarefa concluída ainda.</p>
                 </div>
             `;
-            taskList.appendChild(div);
-        });
+        } else {
+            completed.forEach(task => listCompleted.appendChild(createTaskElement(task)));
+        }
+    }
+
+    function createTaskElement(task) {
+        const div = document.createElement('div');
+        div.className = `task-item ${task.completed ? 'completed' : ''}`;
+        div.id = `task-${task.id}`;
+        div.draggable = true;
+        div.addEventListener('dragstart', drag);
+        div.addEventListener('dragend', dragEnd);
+        
+        const now = new Date();
+        const dateOptions = { day: 'numeric', month: 'short' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit' };
+        const dateStr = now.toLocaleDateString('pt-BR', dateOptions);
+        const timeStr = now.toLocaleTimeString('pt-BR', timeOptions);
+        
+        div.innerHTML = `
+            <div class="task-header">
+                <label class="task-check-area" onclick="toggleTask(${task.id}, event)">
+                    <div class="custom-checkbox">
+                        <input type="checkbox" id="cb-${task.id}" ${task.completed ? 'checked' : ''} tabindex="-1">
+                        <span class="checkmark"></span>
+                    </div>
+                    <span class="task-check-label">${task.completed ? 'Concluída' : 'Pendente'}</span>
+                </label>
+                <div class="task-actions">
+                    <button class="btn-icon btn-delete" onclick="removeTask(${task.id})" title="Remover">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="task-title">${escapeHTML(task.title)}</div>
+            <div class="task-footer">
+                <span class="task-date">${dateStr}., ${timeStr}</span>
+                <i class="fa-solid fa-grip-lines drag-handle"></i>
+            </div>
+        `;
+        return div;
+    }
+
+    // --- Drag and Drop Logic ---
+    window.allowDrop = function(ev) {
+        ev.preventDefault();
+    };
+
+    window.dragEnter = function(ev) {
+        ev.preventDefault();
+        const list = ev.currentTarget;
+        list.classList.add('drag-over');
+    };
+
+    window.dragLeave = function(ev) {
+        const list = ev.currentTarget;
+        list.classList.remove('drag-over');
+    };
+
+    function drag(ev) {
+        const item = ev.currentTarget;
+        const id = item.id.replace('task-', '');
+        const isCompleted = item.classList.contains('completed');
+        
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData("text/plain", id);
+        ev.dataTransfer.setData("is-completed", isCompleted.toString());
+        item.classList.add('dragging');
+    }
+
+    function dragEnd(ev) {
+        ev.target.classList.remove('dragging');
+        listPending.classList.remove('drag-over');
+        listCompleted.classList.remove('drag-over');
+    }
+
+    window.drop = async function(ev, targetIsCompleted) {
+        ev.preventDefault();
+        const list = ev.currentTarget;
+        list.classList.remove('drag-over');
+
+        const taskId = ev.dataTransfer.getData("text/plain");
+        const originIsCompleted = ev.dataTransfer.getData("is-completed") === "true";
+
+        if (!taskId) return;
+        
+        // If dropped in the same column, ignore or reorder (reorder not supported yet)
+        if (originIsCompleted === targetIsCompleted) return;
+
+        // Visual optimistic update
+        const taskElement = document.getElementById(`task-${taskId}`);
+        if (taskElement) {
+            if (targetIsCompleted) {
+                taskElement.classList.add('completed');
+                taskElement.querySelector('.task-check-label').textContent = 'Concluída';
+                taskElement.querySelector('.custom-checkbox input').checked = true;
+                listCompleted.appendChild(taskElement);
+            } else {
+                taskElement.classList.remove('completed');
+                taskElement.querySelector('.task-check-label').textContent = 'Pendente';
+                taskElement.querySelector('.custom-checkbox input').checked = false;
+                listPending.appendChild(taskElement);
+            }
+            updateProgressCounters();
+            checkEmptyStates();
+        }
+
+        // Call API
+        try {
+            const response = await fetch(`/api/tasks/${taskId}/complete`, { method: 'POST' });
+            if (!response.ok) {
+                console.error("Erro ao alternar status da tarefa no servidor");
+                loadTasks(); // revert if failed
+            }
+        } catch (error) {
+            console.error(error);
+            loadTasks();
+        }
+    };
+
+    function updateProgressCounters() {
+        const pend = listPending.querySelectorAll('.task-item').length;
+        const comp = listCompleted.querySelectorAll('.task-item').length;
+        const total = pend + comp;
+        const percent = total === 0 ? 0 : Math.round((comp / total) * 100);
+        
+        progressBar.style.width = `${percent}%`;
+        progressText.textContent = `Progresso do dia: ${percent}%`;
+        progressCount.textContent = `${comp} de ${total} concluídas`;
+        
+        countPending.textContent = pend;
+        countCompleted.textContent = comp;
+    }
+
+    function checkEmptyStates() {
+        const pend = listPending.querySelectorAll('.task-item').length;
+        const comp = listCompleted.querySelectorAll('.task-item').length;
+
+        // Remove old empty states
+        const oldEmptyPend = listPending.querySelector('.empty-state');
+        if (oldEmptyPend && pend > 0) oldEmptyPend.remove();
+        const oldEmptyComp = listCompleted.querySelector('.empty-state');
+        if (oldEmptyComp && comp > 0) oldEmptyComp.remove();
+
+        if (pend === 0 && !oldEmptyPend) {
+            listPending.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-mug-hot"></i>
+                    <p>Nenhuma tarefa pendente.</p>
+                </div>
+            `;
+        }
+        if (comp === 0 && !oldEmptyComp) {
+            listCompleted.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-wind"></i>
+                    <p>Nenhuma tarefa concluída ainda.</p>
+                </div>
+            `;
+        }
     }
 
     async function loadWeatherAndAdvice() {
